@@ -1,3 +1,17 @@
+
+- [Lecture 1 Introduction](#lecture-1-introduction)
+  - [1 Process](#1-process)
+  - [2 Protection and resource management](#2-protection-and-resource-management)
+  - [3 Main techniques for virtualization](#3-main-techniques-for-virtualization)
+  - [4 Exercise for lecture 1](#4-exercise-for-lecture-1)
+    - [1](#1)
+    - [2](#2)
+    - [3](#3)
+    - [4](#4)
+    - [5](#5)
+- [Lecture 2 Memory Management free space and dynamic allocation](#lecture-2-memory-management-free-space-and-dynamic-allocation)
+  - [1 Fragmentation](#1-fragmentation)
+  - [2 How to implement a memory allocator](#2-how-to-implement-a-memory-allocator)
 # Lecture 1 Introduction
 
 ## 1 Process
@@ -90,3 +104,31 @@ printf("P")
 ```
 there are 3 process 1 parent and 2 children.
 ***take care of the exit(0)*** and the output is random like P01 0P1 01P.
+# Lecture 2 Memory Management free space and dynamic allocation
+
+## 1 Fragmentation  
+
++ External Fragmentation  
+when there is enough aggregate heap memory, but no single free block is large enough.
+
++ Internal Fragmentation  
+For a given block, inter fragmentation occurs if payload is smaller than block size. **1 overhead of maintaining heap data structures 2 padding for alignment purposes 3 explicit policy decisions**  
+
+## 2 How to implement a memory allocator  
+
++ Free block organization : use "free list" -- linked list of descriptors of free blocks. ***Bookkeeping(store size of block + pointers to next and previous elements in free list) + memory alignment***
+  
++ Placement : the strategies have a major impact on external fragmentation.  
+     1. best fit : minimize fragmentation by allocating space from block that ***leaves smallest fragment***sawdust everywhere (as a result of small remainder)  
+        a list of free blocks each has a header holding block size and pointer to next
+     2. first fit : ***pick the first block that fits*** 
+
++ Splitting :
+  1. keep the remainder within the chosen block ***simple and fast but introduces more internal fragmentation***  
+  2. split the chosen block in two and insert the remainder block in the free list  
+
++ Coalescing : helps avoiding "false external fragmentation" ; Immediate or Deferred.
+
+<mark><b>Impossible to solve fragmentation</mark>  
+
+> there exists streams of allocation and de-allocation requests that defeat the allocator and force it into severe fragmentation 
