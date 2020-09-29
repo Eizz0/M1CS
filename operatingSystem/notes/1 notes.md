@@ -131,4 +131,84 @@ For a given block, inter fragmentation occurs if payload is smaller than block s
 
 - Slab allocation : optimize for the case : **task_struct** needs contiguous physical memory, a slab is multiple pages of contiguous physical memory. ***speed and no internal fragmentation***
 
-- Buddy allocation : a special form of segregated allocator. Binary buddies : rounds up all allocation to powers of 2 ***fast but may result in heavy internal fragmentation***
+- Buddy allocation : a special form of segregated allocator. Binary buddies : rounds up all allocation to powers of 2 ***fast but may result in heavy internal fragmentation***  
+
+## 4 Garbage collection
+
+1. goal : automatica reclamation of heap-allocated storage ; the application never has to free(avoid memory bugs: double free bugs, 8dangling pointers, memory leaks)
+
+2. Main principle : ***what is garbage a memory block cannot be reached anymore by the application***  
+
+3. assumptions : view memory as a directed graph(each block is a node in the graph; each pointer is an edge in the graph;Locations not in the heap that contain into the heap called root nodes ***e.g.,registers,global variables,locations on the stack***)
+
+4. algorithms :
+    1. Tracing collectiors (triggered when heap runs out of free space)
+
+    2. Reference counting : use ref count that keeps tracks of the current number of pointers to it
+
+
+# Lecture 3 The memory hierarchy
+
+## 1 Cache
+ 
+Computer memory with short access time used for the storage of frequently or recently used instructions or data.
+
+
+## 2 Memory Hierarchies
+
+### 1 why
+Faster storage cost more per byte and have lower capacity, gaps between memory technology speeds are widening , it's ***an approach for organizing memory and storage systems***
+
+### 2 examples
+
+
+
+
+# Lecture 4 Threads
+
+***A thread is a schedulable execution context***
+
+## 1 why threads
+
+concurrent : one cpu , parallel : different cpus
+
+1. most popular abstraction for aoncurreny: all threads in a process share memory and file descriptors, lower resource comsumption compare to process
+
+2. allows a process to use multiple cpus
+
+3. allows a program to overlap I/O and computation 
+
+## 2 Preemptive and cooperative threads
+
+1. preemptive threads:  a thread can be preempted at any time in order to allocate the CPU to another context, thread(the same process), process; ***multiple threads within the same process can run in parallel on multiple CPUs.***
+
+2. cooperative threads : at most a single threads (within a given process) is allowed to run at a given point in time; a thread switch(in process) can only happen when 1.relinquishes the CPU or issues a blocking syscall or terminates.
+
+3. discuss
+  + preemptive threads cause more "race conditions"
+
+  + cooperative threads cannot take advantage of multiple CPUs
+
+  + cooperative threads may let a "misbehaving"
+
+## 3 Kernel threads and user threads
+
+1. kernel threads **kernel-managed threads** : the kernel is aware that a process may encapsulate several schedulable execution contexts.   
+   + every thread operation must go through kernel.
+   + one-size-fits-all thread implementation.
+   + general heavy-weight memory requirements
+
+1. user threads **user-managed threads** : such execution contexts are managed from a library running in user level.
+   + cannot take advantage of multiple CPUs
+   + a blocking system call blocks all threads(within the same process)
+
+
+
+
+# Lecture 5 Virtual Memory
+
+## 1 Issues in sharing physical memory
+
+1. Protection 
+
+
