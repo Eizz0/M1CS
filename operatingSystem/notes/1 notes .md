@@ -19,7 +19,9 @@
   - [2 Preemptive and cooperative threads](#2-preemptive-and-cooperative-threads)
   - [3 Kernel threads and user threads](#3-kernel-threads-and-user-threads)
 - [Lecture 5 Virtual Memory](#lecture-5-virtual-memory)
-  - [1 Issues in sharing physical memory](#1-issues-in-sharing-physical-memory)
+  - [Issues in sharing physical memory](#issues-in-sharing-physical-memory)
+  - [Goal of virtual memory](#goal-of-virtual-memory)
+  - [Advantage](#advantage)
 # Lecture 1 Introduction
 
 ## 1 Process
@@ -229,8 +231,21 @@ concurrent : one cpu , parallel : different cpus
    + **all threads share the data of the enclosing process** qnd maybe each thread need to have its own copy of certain data.
 # Lecture 5 Virtual Memory
 
-## 1 Issues in sharing physical memory
+##  Issues in sharing physical memory
+1. **protection** : a bug in one process can corrupt memory in another
+2. **transparency** : a process should not require fixed memory locations
+3. **resourece exhaustion** : the sum of sizes of all processes is greater than physical memory
 
-1. Protection 
+## Goal of virtual memory
+
+1. give eachprogram its own "virtual" address space
+2. enforce protection
+3. allow programs to see more memory than exists
+
+## Advantage
+
+1. relocate program while running
+2. 
+
 
 
