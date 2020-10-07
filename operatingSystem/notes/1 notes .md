@@ -22,6 +22,10 @@
   - [Issues in sharing physical memory](#issues-in-sharing-physical-memory)
   - [Goal of virtual memory](#goal-of-virtual-memory)
   - [Advantage](#advantage)
+  - [Implement ways](#implement-ways)
+  - [Virtual memory definitions](#virtual-memory-definitions)
+  - [Segmentation](#segmentation)
+  - [Page](#page)
 # Lecture 1 Introduction
 
 ## 1 Process
@@ -198,47 +202,48 @@ concurrent : one cpu , parallel : different cpus
 
 2. cooperative threads : at most a single thread (within a given process) is allowed to run at a given point in time; a thread switch(in process) can only happen when ***relinquishes the CPU(yield()) or issues a blocking syscall/terminates.***
 
-3. discussion
-  + preemptive threads cause more "race conditions"
+3. discussion  
 
-  + cooperative threads cannot take advantage of multiple CPUs
-
-  + cooperative threads may let a "misbehaving"
+   - preemptive threads cause more "race conditions"  
+   - cooperative threads cannot take advantage of multiple CPUs
+   - cooperative threads may let a "misbehaving"
 
 ## 3 Kernel threads and user threads
 
-1. kernel threads **kernel-managed threads** : the kernel is aware that a process may encapsulate several schedulable execution contexts.   
-   + every thread operation must go through kernel.
-   + one-size-fits-all thread implementation.
-   + general heavy-weight memory requirements
+1. kernel threads **kernel-managed threads** : the kernel is aware that a process may encapsulate several schedulable execution contexts.  
+   - every thread operation must go through kernel.
+   - one-size-fits-all thread implementation.
+   - general heavy-weight memory requirements
 
 1. user threads **user-managed threads** : such execution contexts are managed from a library running in user level.
-   + cannot take advantage of multiple CPUs
-   + a blocking system call blocks all threads(within the same process)
-
+   - cannot take advantage of multiple CPUs
+   - a blocking system call blocks all threads(within the same process)
 
 1. N:M threading : hybrid threading
-   N user threads per M kernel threads   
-   + same problem as user threads  
-   + hard to keep the number of kernel   
-   +  threads the same as available CPUs  
+   N user threads per M kernel threads  
+   - same problem as user threads  
+   - hard to keep the number of kernel  
+   - threads the same as available CPUs  
 
-1. Details
-   + one thread of a program call fork(): only the calling thread is replicated in the child process
-   + one thread of a program call exec(): the program replaces the entire process including all threads 
-   + cancellation : 1 before it has completed 2 asynchronous cancellation 3 deferred cancellation
-   + only a single thread receives a given signal instance within a process
-   + **all threads share the data of the enclosing process** qnd maybe each thread need to have its own copy of certain data.
+1. Details  
+
+- one thread of a program call fork(): only the calling thread is replicated in the child process
+- one thread of a program call exec(): the program replaces the entire process including all threads  
+- cancellation : 1 before it has completed 2 asynchronous cancellation 3 deferred cancellation
+- only a single thread receives a given signal instance within a process
+- **all threads share the data of the enclosing process** qnd maybe each thread need to have its own copy of certain data.
+
 # Lecture 5 Virtual Memory
 
-##  Issues in sharing physical memory
+## Issues in sharing physical memory
+
 1. **protection** : a bug in one process can corrupt memory in another
 2. **transparency** : a process should not require fixed memory locations
-3. **resourece exhaustion** : the sum of sizes of all processes is greater than physical memory
+3. **resources exhaustion** : the sum of sizes of all processes is greater than physical memory
 
 ## Goal of virtual memory
 
-1. give eachprogram its own "virtual" address space
+1. give each program its own "virtual" address space
 2. enforce protection
 3. allow programs to see more memory than exists
 
@@ -248,62 +253,58 @@ concurrent : one cpu , parallel : different cpus
 2. most of the memory of a process is idle
 
 ## Implement ways
- Idea 1 load-time linking   
+
+ Idea 1 load-time linking  
   keep the list of the memory references  
- 1. how to enforce protection : 
- 2. how to move data during execution(after startup) : 
- 3. what if no contiguous free region fits program : 
+  
+ 1. how to enforce protection :  
+ 2. how to move data during execution(after startup) :  
+ 3. what if no contiguous free region fits program :  
 
  Idea 2 base + bound registers  
 
  1. phys.addr = virt.addr. +base
- check 0<= virt.addr.<bound else trap to kernel 
+  check  0 <= virt.addr. < bound else trap to kernel  
  2. move a process in memory : change base register
  3. context switch: OS must reload/modify base and bound register
- 
- advantage: cheap to implement in hardware ; cheap in terms of cycles     
- disadvantage: growing the memory of a process is expensive ; no way to share code or data
 
- ## Virtual memory definitions
+ advantage: cheap to implement in hardware ; cheap in terms of cycles  
+ disadvantage: ***growing*** the memory of a process is expensive ; ***no way to share code or data***
+
+## Virtual memory definitions
 
  1. programs manipulate **virtual/logical** addresses
  2. actual memory uses **physical/real** addresses
- 3. hardware uses  **Mmeory Management Unit** MMU 
-    + a part of CPU
-    + accessed with privileged instructions
-    + translates from virtual to physical addresses
-    + provides address space
+ 3. hardware uses  **Memory Management Unit** MMU  
+    - a part of CPU
+    - accessed with privileged instructions
+    - translates from virtual to physical addresses
+    - provides address space
 
 ## Segmentation
 
- 1. let processes have many base/bound registers
+ 1. let processes have many base/bound registers 
  2. advantage:
     multiple segments per process
     allow sharing :
 
     disadvantage:
-    + requires translation hardware performance limit
-    + N-byte segment needs N contiguous bytes of physical memory
-    + fragmentation : variable-sized pieces --**external fragmentaion**
+    - requires translation hardware performance limit
+    - N-byte segment needs N contiguous bytes of physical memory
+    - fragmentation : variable-sized pieces --**external fragmentation**
       fixed-sized pieces no external holes but force internal waste**internal fragmentation**
 
- 3. 
-
 ## Page
+
   1. divide memory into fixed-size pages
-  2. map virtual pages to physical pages **frame** each process has separate mapping configuration 
+  2. map virtual pages to physical pages **frame** each process has separate mapping configuration  
   3. allow os to gain control on certain operations
   4. trade-offs:
     + eliminates external fragmentation
     + simplifies allocation, free, backing storage
     + average internal fragmentation of 0.5 pages per segment
-       - 
-
+  
   5. data structure
     + ***pages are fixed size e.g. 4kb **12bits for 4kb-pages page offset** **page number*****
     + ***each process has a page table*** maps virtual page number to physical page number VPN to PPN, includes bits for protection, validity.
-    + what happens in the case of a read access and for a write access : 
-
-
-
-
+    + what happens in the case of a read access and for a write access :
