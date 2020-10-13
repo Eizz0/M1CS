@@ -1,0 +1,528 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[]{algorithm2e}
+\usepackage{amsmath}
+\usepackage[a4paper]{geometry}
+
+\usepackage{graphicx}
+
+\setlength{\parindent}{0pt}
+
+\title{APP 1 Report}
+\author{Benjamin \textsc{Peyrille} \\ Vincent \textsc{Aubriot} \\ Fynn  \textsc{Bachmann} \\  Tommy \textsc{Burnoud} \\ Dorian \textsc{Biichlé} \\ Ou \textsc{Ziyi} }
+
+\begin{document}
+\input{title/title.tex}
+\newpage
+% \maketitle
+
+\section{Choice of the data structure}
+
+We will use an ordered binary tree to create the maze using a recursive algorithm. We define the content of each of the nodes of the tree as such: % justification
+\begin{itemize}
+    \item lchild: \textbf{Node}
+    \item rchild: \textbf{Node}
+    \item dir: \textbf{Direction}
+    \item x1,y1 : \textbf{Integers} (coordinates of top left corner)
+    \item x2,y2:  \textbf{Integers} (coordinates of bottom right corner)
+    \item ex,ey: \textbf{Integers} (coordinates of the exit for this level)
+\end{itemize}
+
+where \textbf{Direction} is an enumeration : $\{DOWN, RIGHT, UP, LEFT\}$\\
+
+This structure allows us to define a room (by using the top-left corner and the bottom-right corner coordinates), the coordinates of the exit cell of that room, and the direction that you need to take in order to leave. Note that the direction information is redundant as it can be deduced from the sibling. However, storing it makes writing the next algorithms easier.\\
+
+The binary tree is ordered: the right child corresponds to the sub-room containing the parent's exit, while the left child corresponds to the sub-room not containing it. This simplifies the solving algorithm later on.
+
+\section{Maze generation}
+
+\subsection{Generation algorithm}
+
+The algorithm takes one input: the root of the maze we want to generate. Before the execution, this tree is composed of only one node, which contains the base information about the maze: its size and its exit room.\\
+
+We recursively take the current room (represented by a \texttt{Node}), split it along its longest side into two rooms and do the same on each sub-room until we are left with "corridors": $1 \times n$ sized rooms.\\
+
+At the end of the algorithm, the tree represents the generated maze with its multiple walls and corridors.
+
+\begin{algorithm}[H]
+\SetKwFunction{FRecurs}{CreateMazeRec}%
+
+\Fn{\FRecurs{root}} {
+
+\KwData{root, a Node}
+
+\Begin{
+    width $\leftarrow$  root.x2 - root.x1 \\
+    height $\leftarrow$ root.y2 - root.y1 \\
+    
+    \tcc{Base case: $1 \times n$ or $n \times 1$ rectangle}
+    \If{ width = 1 or height = 1}{ % 
+        return
+    }
+  
+    \If{width $\ge$ height} {
+        splitOffset $\leftarrow$ random(0, x2 - x1 - 1) \\
+        doorOffset $\leftarrow$ random(0, y2 - y1) \\
+        ex $\leftarrow$ x1 + splitOffset \\
+        ey $\leftarrow$ y1 + doorOffset \\
+        t1 $\leftarrow$ Node(x1: root.x1, \\
+             y1: root.y1, 
+            x2: root.x1 + splitOffset + 1, 
+            y2: root.y2, 
+            ex: ex, 
+            ey: ey, 
+            dir: RIGHT)
+            
+        t2 $\leftarrow$ Node(x1: root.x1 + splitOffset + 1, 
+            y1: root.y1,
+            x2: root.x2,
+            y2: root.y2,
+            ex: ex + 1,
+            ey: ey,
+            dir: LEFT)
+    }
+  
+    \Else{
+        splitOffset $\leftarrow$ random(0, y2 - y1 - 1) \\
+        doorOffset $\leftarrow$ random(0, x2 - x1) \\
+        
+        ey $\leftarrow$ y1 + splitOffset \\
+        ex $\leftarrow$ x1 + doorOffset \\
+        
+        
+        t1 $\leftarrow$ Node(x1: root.r1, 
+            y1: root.y1, 
+            x2: root.x2,
+            y2: root.y1 + splitOffset + 1,
+            ex: root.ex,
+            ey: ey,
+            dir: DOWN)
+            
+            
+        t2 $\leftarrow$ Node(x1: root.x1, 
+            y1: root.y1 + splitOffset + 1,
+            x2: root.x2,
+            y2: root.y2, 
+            ex: root.ex,
+            ey: ey + 1,
+            dir: UP)
+            
+    }
+  
+  \tcc{Make sure we always put the exit node on the right child}
+  \If{root.ex,root.ey is in t1}{ % TODO: make a function for that (rect_contains_pt in Benjamin's code)
+        t1.ex $\leftarrow$ root.ex,
+        t1.ey $\leftarrow$ root.ey \\
+        root.rchild $\leftarrow$ t1 \\
+        root.lchild $\leftarrow$  t2
+  }
+  \Else{
+        t2.ex $\leftarrow$ root.ex,
+        t2.ey $\leftarrow$ root.ey\\
+        root.rchild $\leftarrow$ t2 \\
+        root.lchild $\leftarrow$  t1 
+  }
+  
+  CreateMazeRec(root.lchild); \\
+  CreateMazeRec(root.rchild);
+ }}
+ 
+\caption{Internal recursive function for the maze creation}
+\end{algorithm}
+
+The "\texttt{is in}" function of the previous algorithm is done using four comparisons in constant time, and answers the question: "Are the coordinate (x,y) in the rectangle defined by t1?"\\
+
+\begin{algorithm}[H]
+\SetKwFunction{FRecurs}{CreateMaze}
+
+\Fn{\FRecurs{width, height}} {
+
+\KwData{width, height: two positive integers}
+
+\Begin{
+    tree $\leftarrow$ Node(x1: 0,
+        y1: 0,
+        x2: width,
+        y2: height,
+        exit: GenerateExit())
+        
+    return CreateMazeRec(tree)
+}
+\caption{Wrapper function for maze creation}
+\end{algorithm}
+
+An exit is generated by choosing a random cell around the outer walls of the maze before the generation.
+
+\begin{center}
+    \includegraphics[width=0.5\textwidth]{mazeNormal}
+\end{center}
+
+\subsection{Analysis of the generation algorithm}
+
+Our algorithm splits randomly, so it is hard to do a rigorous analysis. We can however work on the worst case and best case in amount of operations executed by our generation.\\
+
+As we create as many nodes as we run the recursive algorithm and since a node takes constant space, we say that for this algorithm, the spatial complexity is equal to the time complexity.
+
+\subsubsection{Best case analysis}
+
+The best case consists of always splitting into a corridor of maximum possible size on one side. This means that, at each step, there will be one leaf generated.
+
+\begin{center}
+    \includegraphics[width=0.5\textwidth]{mazeBest}
+\end{center}
+
+This case minimizes the amount of rooms as in each step, we're removing a corridor of maximum size possible out of the generation. We can compute the number of nodes generated in this case.\\
+
+If $width \neq height$, then we can get $|width-height|$ corridors in the same direction until we get to a square of equal width and height. This creates $2 \times |width-height|$ nodes in the tree (as each corridor has a sibling meta-room), not counting the root.\\
+Now, if $width = height$, we can deduce this recurrence relation:
+$$
+Splits(side) = 
+\begin{cases}
+    1 & \text{if } side = 2\\
+    2 + Splits(side-1) & otherwise
+\end{cases}
+$$
+Generating one split leads to two nodes. This recurrence equation can be expressed in the closed formula: $Splits(side) = 2 \times (side-2)+1 = 2 \times side-3$. This implies $Nodes(side) = 4 \times side-6$, not counting the root.\\
+
+If we merge the results, we have the general result $$Nodes(width, height) = 2|width-height| + 4\min(width, height)-5$$
+
+Our generation algorithm realizes a split per node (meta-room) and a simple return per leaf (elementary room) which are both realized in constant time which gives us a complexity in $\Omega(width+height)$.
+
+If we pose $N = \max(width, height)$, then our generation algorithm has a best-case time complexity in $\Omega(N)$.
+
+\subsubsection{Worst case analysis}
+
+The worst case is splitting always in the middle as this will maximize the amount of splits in both sides, maximizing the amount of leaves. The binary tree obtained by such a process will be close to a complete binary tree.
+
+\begin{center}
+    \includegraphics[width=0.5\textwidth]{mazeWorst}
+\end{center}
+
+It is interesting to note that the number of nodes depending of the area of the maze is an increasing function.\\
+
+A simple analysis can be made in the case of a square maze having a side length of $2^k$. We can divide that maze into four square mazes of side length $2^{k-1}$. A square maze of side $2$ can only be split once. We can then get this recursive formula:
+
+$$Nodes(2^k) =
+\begin{cases}
+    1 \times (\text{Current node}) + 2 \times (\text{Leaves}) & \text{if } k = 1\\
+    1 \times (\text{Current node}) + 2 \times (\text{Children}) + 4 \times Nodes(2^{k-1}) & \text {otherwise}
+\end{cases}
+$$
+
+This recurrence can be expressed as a closed formula: $Nodes(2^k) = 4^k - 1$.
+Posing $S := 2^k \implies Nodes(S) = S^2 - 1$.\\
+
+Using this formula, we can get a very rough upper bound on the number of nodes this method generates by scaling  any maze to a square of side $2^{k+1}$.\\
+
+We first pose $N := \max(\text{width}, \text{height})$, and write $N = 2^k + r ~ \text{ with } ~ 0 \leq r < 2^k$.\\
+
+We also have $1 \leq \frac{2^{k+1}}{N} = c \leq 2$, so $$Nodes(N) \leq Nodes(cN) = (cN)^2 - 1 = c^2N^2 - 1 \leq 4N^2 - 1$$
+
+We conclude that in the worst case, the algorithm has a time complexity in $O(N^2)$.
+
+
+\subsubsection{Conclusion}
+
+We conclude that our generation algorithm has, in the worst case, a time and space complexity in $O(N^2)$.\\
+
+In the best case, a space and time complexity of $\Omega(N)$.
+
+
+\clearpage
+\section{Maze solving}
+
+\subsection{Solving algorithm}
+
+The algorithm takes three parameters as input: the starting point in the maze, represented by its coordinates x and y, and the binary tree that contains the definition of the maze.\\
+
+We use a divide and conquer approach on the maze and solve each submaze. If the maze is a simple elementary room, we just go to the room's exit and we return the room (the maze is solved). Otherwise, we check if the current position is in the left child.\\
+
+If yes, we solve the left sub-maze, we get its exit, we compute the next position based on those coordinates and the direction of the exit (for example, if exit.ex = 1, exit.ey = 1 and dir = RIGHT, then we will obtain x = 2 and y = 1), and we move there. \\
+
+Finally, we solve the right sub-maze from the current position, and return the result of this operation (the maze is solved). \\
+
+\begin{algorithm}[H]
+\SetKwFunction{FRecurs}{SolveMaze}%
+
+\Fn{\FRecurs{root, x, y}} {
+
+\KwData{x, y: the start position, root: a binary tree representing a maze previously created with CreateMaze}
+
+\Begin{
+    \If{root is leaf} {
+        moveTo(root.ex, root.ey) \\
+        return root
+    }
+    
+    \If{ (x,y) is in root.lchild} { % TODO same rect_contains_pt
+        exit $\leftarrow$ SolveMaze(root.lchild, x, y) \\
+        x $\leftarrow$ exit.ex \\
+        y $\leftarrow$ exit.ey \\
+        
+        \Switch{exit.dir}{
+            \Case{DOWN} {
+                y $\leftarrow$ y + 1 
+            }
+            \Case{UP} {
+                y $\leftarrow$ y - 1
+            }
+            \Case{LEFT} {
+                x $\leftarrow$ x - 1
+            }
+            
+            \Case{RIGHT} {
+                x $\leftarrow$ x + 1
+            }
+        }
+        
+        moveTo(x, y)
+    }
+    
+    return SolveMaze(root.rchild, x, y)
+}
+}
+\caption{Recursive maze solving algorithm}
+\end{algorithm}
+
+\begin{center}
+    \includegraphics[width=0.5\textwidth]{mazeSolved}
+\end{center}
+
+\subsection{Analysis of the solving algorithm}
+
+This algorithm is recursively applied on either both children, either solely on the right child. As the structure of the tree this algorithm is applied to is random, we can study the two extreme cases explored before: a "branch tree" and a complete tree.\\
+
+The space the algorithm will take depends on the maximum recursion depth which is bounded by the height of the tree.\\
+
+As above we define the following: $N := \max(\text{width}, \text{height})$.
+
+\subsubsection{Best case analysis}
+
+The best case for the entrance position would be having it located on the same coordinates as the exit. In this case, we would solve the maze in only one exploration of the right-most branch. \\
+
+The best case for the structure has the provided binary tree have its first right-children be a leaf, which we can solve instantly in $O(1)$.\\
+
+The algorithm has then a time and space complexity in $\Omega(1)$.
+
+\subsubsection{Worst case analysis}
+
+For this part, we're defining $S$ as the amount of nodes the tree has.\\
+
+The worst case has the entrance of the maze located as far as possible of the exit. When represented on our generated binary tree, the exit is always located on the rightmost leaf.\\
+
+The two extreme cases are the "branch tree", the best case of the generation, and the complete tree, the worst case of the generation. The worst case of the solving algorithm would be to solve all sub-mazes of the tree. The cost of solving a maze (represented by a node) can be defined as:
+$$T(node) = T(node.left) + T(node.right) + O(1) ~ \text{ where } T(leaf) = O(1)$$
+
+\subsubsection*{Branch Tree}
+
+If the algorithm runs on a "branch tree", since each inner node has at most one child that is not a leaf, we can simplify the previous formula : $T(node) = T(node.child) + O(1)$, where child is the only non-leaf child of the node.\\
+
+Hence we get in this case, $T(root) = \text{depth of root} \times O(1) = O(S)$. In the "branch tree" case, $S \in O(N)$.\\
+
+As the recursion depth is the same as the height of the tree, the time and space complexity in this case is in $O(N)$.\\[0.1cm]
+
+\subsubsection*{Complete Tree}
+
+If the algorithm runs on a complete tree, we can define this recursive formula:
+
+$$T(S) = 2T(\frac{S}{2}) + O(1)$$
+
+Using the Master theorem, we can solve this recurrence and have that $T(S) = O(S)$. However, $S \in O(N^2)$. So the time complexity is in $O(N^2)$.\\
+
+Since the tree is balanced, its height is in $O(\log S) \in O(\log N)$. Hence, the spatial complexity in this case is in $O(\log N).$
+\\
+
+\subsubsection{Conclusion}
+
+We conclude that our solving algorithm has, in the worst case, a time complexity in $O(N^2)$ and a spatial complexity in $O(N)$.\\
+
+In the best case, a space and time complexity of $\Omega(1)$.
+
+\section{Alternatives}
+
+\subsection{Generation}
+
+We can take advantage of the fact that we are generating the maze to precompute all paths leading to the exit at once. By doing so, solving the maze will be simpler, but it adds a cost in the generation.\\
+
+We first edit the Node data type by adding two fields: \textbf{exitRoom} of type \textbf{Node} initialized to None, and \textbf{parent} of type \textbf{Node}\\
+
+We then define a new data type: \textbf{Request}. The \textbf{Request} type contains a reference to an \textbf{exitRoom} field and the coordinates of an exit cell.
+
+\begin{algorithm}[H]
+\SetKwFunction{FRecurs}{CreateMazeRecAlt}%
+
+\Fn{\FRecurs{root, requests}} {
+
+\KwData{root, a Node; requests, a Linked List of Requests}
+
+\Begin{
+    width $\leftarrow$  root.x2 - root.x1 \\
+    height $\leftarrow$ root.y2 - root.y1 \\
+    
+    \tcc{Base case: $1 \times n$ or $n \times 1$ rectangle}
+    \If{ width = 1 or height = 1}{ %
+    
+        \For{request in requests} {
+            [request.exitRoom] $\leftarrow$ root
+        }
+        return root
+    }
+  
+    \If{width $\ge$ height} {
+        splitOffset $\leftarrow$ random(0, x2 - x1 - 1) \\
+        doorOffset $\leftarrow$ random(0, y2 - y1) \\
+        ex $\leftarrow$ x1 + splitOffset \\
+        ey $\leftarrow$ y1 + doorOffset \\
+        t1 $\leftarrow$ Node(x1: root.x1, \\
+             y1: root.y1, 
+            x2: root.x1 + splitOffset + 1, 
+            y2: root.y2, 
+            ex: ex, 
+            ey: ey,
+            parent: root,
+            dir: RIGHT)
+            
+        t2 $\leftarrow$ Node(x1: root.x1 + splitOffset + 1, 
+            y1: root.y1,
+            x2: root.x2,
+            y2: root.y2,
+            ex: ex + 1,
+            ey: ey,
+            parent: root,
+            dir: LEFT)
+    }
+  
+    \Else{
+        splitOffset $\leftarrow$ random(0, y2 - y1 - 1) \\
+        doorOffset $\leftarrow$ random(0, x2 - x1) \\
+        
+        ey $\leftarrow$ y1 + splitOffset \\
+        ex $\leftarrow$ x1 + doorOffset \\
+        
+        
+        t1 $\leftarrow$ Node(x1: root.r1, 
+            y1: root.y1, 
+            x2: root.x2,
+            y2: root.y1 + splitOffset + 1,
+            ex: root.ex,
+            ey: ey,
+            dir: DOWN)
+            
+            
+        t2 $\leftarrow$ Node(x1: root.x1, 
+            y1: root.y1 + splitOffset + 1,
+            x2: root.x2,
+            y2: root.y2, 
+            ex: root.ex,
+            ey: ey + 1,
+            dir: UP)
+            
+    }
+  
+  \tcc{Make sure we always put the exit node on the right child}
+  \If{root.ex,root.ey is in t1}{ % TODO: make a function for that (rect_contains_pt in Benjamin's code)
+        t1.ex $\leftarrow$ root.ex,
+        t1.ey $\leftarrow$ root.ey \\
+        root.rchild $\leftarrow$ t1 \\
+        root.lchild $\leftarrow$  t2
+  }
+  \Else{
+        t2.ex $\leftarrow$ root.ex,
+        t2.ey $\leftarrow$ root.ey\\
+        root.rchild $\leftarrow$ t2 \\
+        root.lchild $\leftarrow$  t1 
+  }
+
+  requestsLeft $\leftarrow$ []\\
+  
+  \For{request in requests}{
+    \If{(request.x, request.y) is in root.lchild} {
+        requestsLeft $\leftarrow$ requestsLeft + [request]
+    }
+  }
+  
+  CreateMazeRecAlt(root.lchild, requestsLeft); \\
+  requestsRight $\leftarrow$ [Request(\&root.lchild, GetExitRoomX(root.lchild), GetExitRoomY(root.lchild))]\\
+  \For{request in requests}{
+    \If{(request.x, request.y) is in root.rchild} {
+        requestsLeft $\leftarrow$ requestsRight + [request]
+    }
+  }
+  CreateMazeRecAlt(root.rchild, requestsRight);
+ }}
+ 
+\caption{Alternative recursive function for the maze creation}
+\end{algorithm}
+
+\clearpage
+
+\subsubsection{Analysis}
+
+This algorithm creates as many nodes as the original one, however it does more operations to handle requests.\\
+
+The amount of requests a node can have at the same time is bounded by the height of the tree. In the worst case, which is the branch generation, the height of the tree is $O(N)$.\\
+
+So the space and time complexity is in $O(N^3)$.
+
+\subsection{Solving}
+
+To solve, we must first find where we are in the tree, then iterate through all exitRooms and parents to create our path to the exit.\\
+
+\begin{algorithm}[H]
+\SetKwFunction{FRecurs}{SolveMazeAlt}%
+
+\Fn{\FRecurs{root, x, y}} {
+
+\KwData{root, a Node; x; y}
+
+\Begin{
+    currentRoom $\leftarrow$ FindRoom(root, x, y)\\
+    \While{currentRoom \neq root}{
+        (x,y) $\leftarrow$ moveTo(currentRoom.ex, currentRoom.ey) \\
+        
+        \If{currentRoot.exitNode is not None} {
+            currentRoot $\leftarrow$ currentRoom.exitNode\\
+            \Switch{currentRoom.dir}{
+                \Case{DOWN} {
+                    y $\leftarrow$ y + 1 
+                }
+                \Case{UP} {
+                    y $\leftarrow$ y - 1
+                }
+                \Case{LEFT} {
+                    x $\leftarrow$ x - 1
+                }
+                
+                \Case{RIGHT} {
+                    x $\leftarrow$ x + 1
+                }
+            }
+            moveTo(x,y)
+        }
+        \Else{
+            currentRoom $\leftarrow$ currentRoom.parent
+        }
+    }
+
+}}
+ 
+\caption{Alternative iterative function for the maze solving}
+\end{algorithm}
+
+The function \textbf{FindRoom} searches for the room containing the position given in argument. This search is similar to a search in a binary search tree.
+
+\subsubsection{Analysis}
+
+Executing \textbf{FindRoom} takes as many operations as the height of the tree. In the worst case, the height of the tree is in $O(N)$.
+
+In the worst case in the while loop, we have to explore all nodes which is in the worst case a $O(N^2)$.\\
+
+Hence the worst case time complexity for this algorithm is also $O(N^2)$. However, this solving uses constant space in all cases.
+
+\subsection{Comparison}
+
+This alternative takes more time and more space to generate the maze. However, while the asymptotic worst-case complexity of solving is the same, we use less space and we're doing less comparisons (removed the "\texttt{is in}" function).\\
+
+This method could be more appropriate than the first one if we have to solve the same maze multiple times from various positions (memoization could also be considered).
+
+\end{document}
